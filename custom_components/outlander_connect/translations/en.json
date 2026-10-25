@@ -1,0 +1,35 @@
+{
+  "title": "Outlander Connect",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Mitsubishi Connect — North America",
+        "description": "Enter your existing Mitsubishi Connect account for Canada or the US. This integration reads cloud reports and location; it does not control or explicitly wake the vehicle. Home Assistant stores these credentials in its configuration. No remote-control PIN is needed.",
+        "data": {"username": "Email", "password": "Password"}
+      },
+      "vehicle": {"title": "Choose your vehicle", "data": {"vehicle": "Vehicle"}},
+      "reauth_confirm": {"title": "Sign in again", "description": "Update the Mitsubishi Connect credentials for this vehicle.", "data": {"username": "Email", "password": "Password"}}
+    },
+    "error": {
+      "invalid_auth": "Mitsubishi Connect rejected the sign-in. Check your email and password.",
+      "cannot_connect": "Cannot read Mitsubishi Connect. Check connectivity, subscription, and cloud service availability.",
+      "rate_limited": "Mitsubishi Connect is limiting requests. Wait before trying again.",
+      "no_vehicles": "No vehicles were returned for this North American account.",
+      "vehicle_not_found": "The configured vehicle was not found in this account."
+    },
+    "abort": {
+      "already_configured": "This vehicle is already configured.",
+      "reauth_successful": "Account credentials updated.",
+      "vehicle_not_found": "That vehicle is no longer available in the account."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Cloud polling and GPS",
+        "description": "Vehicle state is polled at this interval. Health reports are read at most every 15 minutes unless you use Refresh cloud reports. Polling reads cached reports; it does not guarantee new vehicle data. Turning GPS off removes the tracker, but existing recorder history is retained.",
+        "data": {"poll_minutes": "State polling interval (minutes, 1–60)", "gps": "Enable vehicle GPS tracker"}
+      }
+    }
+  }
+}
