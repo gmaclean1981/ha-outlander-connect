@@ -1,0 +1,14 @@
+{
+  "codeowners": [
+    "@gmaclean1981"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/gmaclean1981/ha-outlander-connect",
+  "domain": "outlander_connect",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/gmaclean1981/ha-outlander-connect/issues",
+  "name": "Outlander Connect",
+  "requirements": [],
+  "version": "0.1.0"
+}
