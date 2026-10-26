@@ -40,6 +40,9 @@ class Client:
         self.calls.append((year,month,tz))
         if self.error:raise self.error
         return dict(status='Success',periodType='Monthly',distanceUnit='KM',durationUnit='MIN',data=[dict(eventPeriod=f'{year}-{month:02}-30',distance=5,duration=12)])
+    async def async_yearly_mileage(self,vin,year,tz):
+        if self.error:raise self.error
+        return dict(status='Success',periodType='Yearly',distanceUnit='KM',durationUnit='MIN',totalDistance=100,totalDuration=60,data=[dict(eventPeriod=f'{year}-12',distance=100,duration=60)])
 
 class CoordinatorTests(unittest.IsolatedAsyncioTestCase):
     def make(self,error=None):

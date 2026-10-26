@@ -71,4 +71,27 @@ class MileageTests(unittest.TestCase):
         for method,u in [('POST',url),('GET',url+'&command=unlock'),('GET',url+'&month=11'),('GET',url.replace('month=10','month=13')),('GET',url.replace(':15443',':443')),('GET',url.replace('America%2FHalifax','invalid'))]:
             self.assertFalse(api.allowed_request(method,u))
 
+    def test_yearly_totals_and_monthly_units(self):
+        p=report([dict(eventPeriod='2026-01',distance=10,duration=62)])
+        p.update(periodType='Yearly',totalDistance=10,totalDuration=62)
+        self.assertEqual(mileage.totals(p),dict(distance_km=16.09344,driving_minutes=62))
+        self.assertEqual(mileage.parse_year(p,2026)[date(2026,1,1)]['distance_km'],16.09344)
+
+    def test_yearly_wrong_period_and_duplicates_rejected(self):
+        for rows in [[dict(eventPeriod='2025-12',distance=1,duration=1)],[dict(eventPeriod='2026-02',distance=1,duration=1)]*2]:
+            p=report(rows);p['periodType']='Yearly'
+            with self.assertRaises(ValueError):mileage.parse_year(p,2026)
+
+    def test_yearly_query_requires_safe_parameters(self):
+        self.assertTrue(api.valid_mileage_query('year=2026&timezone=America%2FHalifax'))
+        for q in ['year=2026&timezone=America%2FHalifax&extra=1','year=2026&timezone=invalid','year=2026&year=2025&timezone=UTC']:
+            self.assertFalse(api.valid_mileage_query(q))
+
+    def test_month_and_year_readings_are_independent(self):
+        reports={(2026,10):dict(ok=True,totals=dict(distance_km=100,driving_minutes=62))}
+        s=mileage.apply_mileage(data.Snapshot(),reports,date(2026,10,25),dict(ok=False,totals=dict(distance_km=500)))
+        self.assertEqual(s.readings['month_distance_km'].value,100)
+        self.assertEqual(s.readings['month_driving_minutes'].value,62)
+        self.assertIsNone(s.readings['year_distance_km'].value)
+
 if __name__=='__main__':unittest.main()
