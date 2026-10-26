@@ -27,7 +27,7 @@
     "step": {
       "init": {
         "title": "Cloud polling and GPS",
-        "description": "Vehicle state is polled at this interval. Health reports are read at most every 15 minutes unless you use Refresh cloud reports. Polling reads cached reports; it does not guarantee new vehicle data. Turning GPS off removes the tracker, but existing recorder history is retained.",
+        "description": "Vehicle state is polled at this interval. Health and mileage-history reports are read at most every 15 minutes unless you use Refresh cloud reports. Polling reads cached reports; it does not guarantee new vehicle data. Turning GPS off removes the tracker, but existing recorder history is retained.",
         "data": {"poll_minutes": "State polling interval (minutes, 1–60)", "gps": "Enable vehicle GPS tracker"}
       }
     }

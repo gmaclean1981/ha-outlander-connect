@@ -12,6 +12,7 @@ async def async_get_config_entry_diagnostics(hass, entry):
         "gps_enabled": entry.options.get(CONF_GPS, True),
         "last_update_success": c.last_update_success,
         "health_fetch_success": snapshot.health_ok,
+        "mileage_fetch_success": {f"{year:04}-{month:02}": report.get("ok", False) for (year, month), report in c.mileage.items()},
         "last_cloud_poll": snapshot.polled_at.isoformat(),
         "field_metadata": {
             key: {"present": r.value is not None, "source": r.source,
