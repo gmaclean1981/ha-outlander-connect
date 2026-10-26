@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0
+
+Add current-month and year-to-date distance/driving-time sensors, with monthly history attributes for dashboard charts. Query yearly records at most hourly, share manual refresh and rate limits, and isolate yearly read failures from other sensors. Preserve all existing entity IDs and setup. Thirty-four offline tests pass; the tested yearly report reconciles with its monthly records. AI-agent disclosure: developed using OpenAI Codex with owner-led validation.
+
 ## 0.2.0
 
 Add Mitsubishi Mileage Tracker daily distance and driving-time sensors for today and yesterday, current-month daily records as attributes, explicit miles-to-kilometres conversion, Home Assistant time-zone requests and calendar rollover handling. History reads share authentication and rate-limit backoff and fail independently of vehicle-state readings. Existing setup and helpers are preserved.

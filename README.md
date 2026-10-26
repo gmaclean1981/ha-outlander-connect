@@ -12,7 +12,7 @@ This is an independent community integration, not an official Mitsubishi product
 
 1. In HACS, open **Custom repositories** and add `https://github.com/gmaclean1981/ha-outlander-connect` with type **Integration**.
 2. Download **Outlander Connect** and restart Home Assistant.
-3. Go to **Settings Ã¢â€ â€™ Devices & services Ã¢â€ â€™ Add integration Ã¢â€ â€™ Outlander Connect**.
+3. Go to **Settings ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Devices & services ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Add integration ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Outlander Connect**.
 4. Enter your Mitsubishi Connect email and password directly in Home Assistant, then select the vehicle. No remote-control PIN is required.
 
 This is a custom repository, not a listing in the default HACS catalogue. Manual installation is also supported: copy `custom_components/outlander_connect` to `/config/custom_components/outlander_connect` and restart.
@@ -27,13 +27,13 @@ Home Assistant stores credentials in its integration configuration. Protect conf
 - GPS tracker, independent source timestamps and last successful cloud poll.
 - A **Refresh cloud reports** button.
 
-There are 36 integration entities: 29 enabled and seven raw diagnostics disabled by default. Availability depends on the fields returned for your vehicle. Missing fields and unknown codes remain unavailable. A closed door does not establish whether it is locked. Cloud accessibility does not mean LAN reachability.
+There are 40 integration entities: 33 enabled and seven raw diagnostics disabled by default. Availability depends on the fields returned for your vehicle. Missing fields and unknown codes remain unavailable. A closed door does not establish whether it is locked. Cloud accessibility does not mean LAN reachability.
 
 Charging and cable codes 2/0 are mapped from observations on the tested vehicle. Other codes remain unknown. Unverified gasoline range, temperature, theft-alarm and time-to-full fields are available only as disabled raw diagnostics. This release does not claim a validated charging-power or charging-completion-time sensor.
 
 ## Polling, timestamps and GPS
 
-State reports are polled every **five minutes**, with health and mileage-history reports at most every **15 minutes**. Options allow a 1Ã¢â‚¬â€œ60 minute state interval and disabling the GPS tracker. All entities share requests. The refresh button uses the same client and rate-limit backoff; no explicit vehicle wake or control commands are sent.
+State reports are polled every **five minutes**, with health and mileage-history reports at most every **15 minutes**. Options allow a 1ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“60 minute state interval and disabling the GPS tracker. All entities share requests. The refresh button uses the same client and rate-limit backoff; no explicit vehicle wake or control commands are sent.
 
 Successful cloud polling can return cached vehicle data. Inspect the independent location, charging, health and odometer timestamps before treating a measurement as current. An optional health-read failure makes health-derived readings unavailable while successful state readings remain usable.
 
@@ -45,10 +45,13 @@ Tokens refresh automatically. Expired credentials trigger Home Assistant reauthe
 
 ## Daily distance and driving time (v0.2.0)
 
-Four sensors read Mitsubishi Connect's Mileage Tracker records:
+Eight sensors read Mitsubishi Connect's Mileage Tracker records:
 
 - **Distance driven today** and **Distance driven yesterday**, in kilometres.
 - **Driving time today** and **Driving time yesterday**, in minutes.
+- **Distance driven this month/year** and **Driving time this month/year** report the current calendar month and year-to-date totals.
+
+Yearly history is fetched at most hourly, plus the shared refresh button. The yearly distance sensor includes `monthly_history` for monthly comparisons. Monthly and yearly totals are read from the service report, with explicit units; they are not estimates from recorder history. Missing or failed yearly reports leave daily readings working.
 
 The North American service returned miles (`MI`) and minutes (`MIN`) for the tested Canadian account. Miles are converted using exactly 1.609344 km per mile; explicit `KM` reports are already kilometres. Ten daily records were compared with the owner's iPhone app and matched its displayed kilometres and driving minutes. The app's `hh:mm` display is represented as minutes in Home Assistant (for example, 01:02 becomes 62 min).
 
@@ -60,11 +63,11 @@ An existing **Observed daily distance** Utility Meter remains separate. It estim
 
 ### Upgrading an existing installation
 
-Update this integration through HACS and restart Home Assistant. Your existing vehicle entry, credentials, device/entity IDs and helpers are retained; the four history sensors are added to the same device. Do not remove and recreate the integration.
+Update this integration through HACS and restart Home Assistant. Your existing vehicle entry, credentials, device/entity IDs and helpers are retained; the history sensors are added to the same device. Do not remove and recreate the integration.
 
 ## Validation and development
 
-Live setup, sensor updates, GPS, manual cloud refresh and restart persistence were verified on the tested vehicle and Home Assistant version. Thirty offline tests cover field mapping, source timestamps, missing/unknown data, token refresh, bounded authentication retries, rate-limit handling, error sanitization and blocking command endpoints. They use synthetic responses and never contact Mitsubishi. History coverage includes unit conversion, missing versus zero days, invalid records, month/year rollover and the expanded read-only allowlist.
+Live setup, sensor updates, GPS, manual cloud refresh and restart persistence were verified on the tested vehicle and Home Assistant version. Thirty-four offline tests cover field mapping, source timestamps, missing/unknown data, token refresh, bounded authentication retries, rate-limit handling, error sanitization and blocking command endpoints. They use synthetic responses and never contact Mitsubishi. History coverage includes unit conversion, missing versus zero days, invalid records, month/year rollover and the expanded read-only allowlist.
 
 ```sh
 python -m pip install -r requirements-dev.txt
