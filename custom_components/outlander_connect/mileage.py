@@ -5,6 +5,29 @@ import re
 from .data import Reading, number
 
 
+def totals(payload):
+    factor = {"MI": 1.609344, "KM": 1.0}.get(payload.get("distanceUnit"))
+    if factor is None or payload.get("durationUnit") != "MIN":
+        raise ValueError("Unknown mileage units")
+    distance, duration = number(payload.get("totalDistance")), number(payload.get("totalDuration"))
+    return {"distance_km": round(distance * factor, 6) if distance is not None and distance >= 0 else None,
+            "driving_minutes": duration if duration is not None and duration >= 0 else None}
+
+
+def parse_year(payload, year):
+    if not isinstance(payload, dict) or payload.get("status") != "Success" or payload.get("periodType") != "Yearly" or not isinstance(payload.get("data"), list):
+        raise ValueError("Invalid yearly mileage report")
+    result = {}
+    for row in payload["data"]:
+        if not isinstance(row, dict) or not isinstance(row.get("eventPeriod"), str) or not re.fullmatch(r"\d{4}-\d{2}", row["eventPeriod"]):
+            raise ValueError("Invalid mileage month")
+        month = date.fromisoformat(row["eventPeriod"] + "-01")
+        if month.year != year or month in result:
+            raise ValueError("Duplicate or misplaced mileage month")
+        result[month] = totals({**payload, "totalDistance": row.get("distance"), "totalDuration": row.get("duration")})
+    return result
+
+
 def parse_month(payload, year, month):
     """Reject ambiguous reports; missing days are never assumed to mean no driving."""
     if not isinstance(payload, dict) or payload.get("status") != "Success" or payload.get("periodType") != "Monthly":
@@ -31,11 +54,15 @@ def parse_month(payload, year, month):
     return records
 
 
-def apply_mileage(snapshot, reports, today):
+def apply_mileage(snapshot, reports, today, year_report=None):
     """Select today/yesterday afresh on every state update, including midnight."""
     for prefix, day in (("today", today), ("yesterday", today - timedelta(days=1))):
         report = reports.get((day.year, day.month), {})
         row = report.get("records", {}).get(day, {})
         for metric, unit in (("distance_km", "km"), ("driving_minutes", "min")):
             snapshot.readings[f"{prefix}_{metric}"] = Reading(row.get(metric) if report.get("ok") else None, "mileage", unit=unit)
+    for prefix, report in (("month", reports.get((today.year, today.month), {})), ("year", year_report or {})):
+        for metric, unit in (("distance_km", "km"), ("driving_minutes", "min")):
+            value = report.get("totals", {}).get(metric) if report.get("ok") else None
+            snapshot.readings[f"{prefix}_{metric}"] = Reading(value, "mileage", unit=unit)
     return snapshot

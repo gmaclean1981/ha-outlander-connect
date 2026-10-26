@@ -10,7 +10,7 @@ from homeassistant.util import dt as dt_util
 from .api import CloudClient, CloudError, AuthenticationError, RateLimitError
 from .const import CONF_VIN, CONF_POLL_MINUTES, DEFAULT_POLL_MINUTES, DOMAIN, HEALTH_INTERVAL_SECONDS
 from .data import parse_snapshot
-from .mileage import parse_month, apply_mileage
+from .mileage import parse_month, parse_year, totals, apply_mileage
 
 LOGGER = logging.getLogger(__name__)
 
@@ -30,6 +30,7 @@ class OutlanderCoordinator(DataUpdateCoordinator):
         self.mileage = {}
         self.mileage_today = None
         self.mileage_timezone = None
+        self.yearly_mileage = {}
 
     async def _async_update_data(self):
         try:
@@ -61,14 +62,27 @@ class OutlanderCoordinator(DataUpdateCoordinator):
                 report["next_fetch"] = time.monotonic() + 900
                 try:
                     payload = await self.client.async_mileage(self.vin, year, month, self.mileage_timezone)
-                    report.update(records=parse_month(payload, year, month), ok=True, fetched_at=polled_at)
+                    report.update(records=parse_month(payload, year, month), totals=totals(payload), ok=True, fetched_at=polled_at)
                 except AuthenticationError:
                     raise
                 except (CloudError, ValueError):
                     report["ok"] = False
                     LOGGER.debug("Optional mileage-history read failed; vehicle-state sensors remain available")
+            year_report = self.yearly_mileage
+            if year_report.get("year") != self.mileage_today.year or year_report.get("timezone") != self.mileage_timezone:
+                year_report = self.yearly_mileage = {"year": self.mileage_today.year, "timezone": self.mileage_timezone, "next_fetch": 0, "ok": False}
+            if time.monotonic() >= year_report["next_fetch"]:
+                year_report["next_fetch"] = time.monotonic() + 3600
+                try:
+                    payload = await self.client.async_yearly_mileage(self.vin, self.mileage_today.year, self.mileage_timezone)
+                    year_report.update(records=parse_year(payload, self.mileage_today.year), totals=totals(payload), ok=True, fetched_at=polled_at)
+                except AuthenticationError:
+                    raise
+                except (CloudError, ValueError):
+                    year_report["ok"] = False
+                    LOGGER.debug("Optional yearly mileage read failed; other sensors remain available")
             snapshot = parse_snapshot(state, self.health, polled_at=polled_at, health_ok=self.health_ok)
-            return apply_mileage(snapshot, self.mileage, self.mileage_today)
+            return apply_mileage(snapshot, self.mileage, self.mileage_today, year_report)
         except AuthenticationError as err:
             raise ConfigEntryAuthFailed("Mitsubishi Connect sign-in is required") from err
         except RateLimitError as err:
@@ -80,4 +94,5 @@ class OutlanderCoordinator(DataUpdateCoordinator):
         self._next_health = 0.0
         for report in self.mileage.values():
             report["next_fetch"] = 0.0
+        self.yearly_mileage["next_fetch"] = 0.0
         await self.async_request_refresh()

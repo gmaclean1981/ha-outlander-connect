@@ -23,6 +23,10 @@ SENSORS = (
     Description(key="today_driving_minutes", name="Driving time today", device_class=SensorDeviceClass.DURATION, native_unit_of_measurement="min", suggested_display_precision=0),
     Description(key="yesterday_distance_km", name="Distance driven yesterday", device_class=SensorDeviceClass.DISTANCE, native_unit_of_measurement="km", suggested_display_precision=2),
     Description(key="yesterday_driving_minutes", name="Driving time yesterday", device_class=SensorDeviceClass.DURATION, native_unit_of_measurement="min", suggested_display_precision=0),
+    Description(key="month_distance_km", name="Distance driven this month", device_class=SensorDeviceClass.DISTANCE, native_unit_of_measurement="km", suggested_display_precision=2),
+    Description(key="month_driving_minutes", name="Driving time this month", device_class=SensorDeviceClass.DURATION, native_unit_of_measurement="min", suggested_display_precision=0),
+    Description(key="year_distance_km", name="Distance driven this year", device_class=SensorDeviceClass.DISTANCE, native_unit_of_measurement="km", suggested_display_precision=2),
+    Description(key="year_driving_minutes", name="Driving time this year", device_class=SensorDeviceClass.DURATION, native_unit_of_measurement="min", suggested_display_precision=0),
     Description(key="charging_updated", name="Charging data timestamp", device_class=SensorDeviceClass.TIMESTAMP, entity_category=EntityCategory.DIAGNOSTIC),
     Description(key="health_updated", name="Health data timestamp", device_class=SensorDeviceClass.TIMESTAMP, entity_category=EntityCategory.DIAGNOSTIC),
     Description(key="gps_updated", name="Location data timestamp", device_class=SensorDeviceClass.TIMESTAMP, entity_category=EntityCategory.DIAGNOSTIC),
@@ -60,6 +64,17 @@ class OutlanderSensor(OutlanderEntity, SensorEntity):
     @property
     def extra_state_attributes(self):
         attrs = super().extra_state_attributes
+        if self.key.startswith(("month_", "year_")):
+            day = self.coordinator.mileage_today
+            if day is None:
+                return attrs
+            yearly = self.key.startswith("year_")
+            report = self.coordinator.yearly_mileage if yearly else self.coordinator.mileage.get((day.year, day.month), {})
+            attrs.update(period=str(day.year) if yearly else day.strftime("%Y-%m"), timezone=self.coordinator.mileage_timezone, mileage_fetch_success=report.get("ok", False))
+            if report.get("fetched_at"):
+                attrs["history_last_fetched"] = report["fetched_at"].isoformat()
+            if self.key == "year_distance_km" and report.get("ok"):
+                attrs["monthly_history"] = [{"month": d.strftime("%Y-%m"), **values} for d, values in sorted(report.get("records", {}).items()) if d <= day]
         if self.key.startswith(("today_", "yesterday_")):
             day = self.coordinator.mileage_today
             if day is None:

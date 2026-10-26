@@ -1,7 +1,7 @@
 """Constants for the North American Mitsubishi Connect integration."""
 DOMAIN = "outlander_connect"
 NAME = "Outlander Connect"
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 HOST = "us-m.aerpf.com"
 CONF_VIN = "vin"
 CONF_VEHICLE = "vehicle"

@@ -52,9 +52,9 @@ def valid_mileage_query(query: str) -> bool:
     """Only the app's monthly read, with one value for each expected parameter."""
     try:
         params = parse_qs(query, strict_parsing=True, keep_blank_values=True)
-        if set(params) != {"year", "month", "timezone"} or any(len(v) != 1 for v in params.values()):
+        if set(params) not in ({"year", "month", "timezone"}, {"year", "timezone"}) or any(len(v) != 1 for v in params.values()):
             return False
-        year, month = params["year"][0], params["month"][0]
+        year, month = params["year"][0], params.get("month", ["1"])[0]
         if not re.fullmatch(r"20\d{2}", year) or not re.fullmatch(r"[1-9]|1[0-2]", month):
             return False
         ZoneInfo(params["timezone"][0])
@@ -183,6 +183,17 @@ class CloudClient(AuthHeaders):
         data = await self._get(f"https://{HOST}:15443/api/v1/services/metrics/mileage/{vin}?{query}")
         if data.get("status") != "Success" or data.get("periodType") != "Monthly" or not isinstance(data.get("data"), list):
             raise CloudError("Unexpected mileage-history response")
+        return data
+
+    async def async_yearly_mileage(self, vin: str, year: int, timezone_name: str) -> dict:
+        if not VIN_RE.fullmatch(vin):
+            raise CloudError("Invalid configured vehicle identifier")
+        query = urlencode({"year": str(year), "timezone": timezone_name})
+        if not valid_mileage_query(query):
+            raise CloudError("Invalid mileage-report year or time zone")
+        data = await self._get(f"https://{HOST}:15443/api/v1/services/metrics/mileage/{vin}?{query}")
+        if data.get("status") != "Success" or data.get("periodType") != "Yearly" or not isinstance(data.get("data"), list):
+            raise CloudError("Unexpected yearly mileage-history response")
         return data
 
     def clear(self):
